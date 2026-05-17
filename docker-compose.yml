@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: vulnlab-backend
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    networks:
+      - vulnlab
+
+  frontend:
+    build: ./frontend
+    container_name: vulnlab-frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_TARGET=http://backend:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - vulnlab
+
+networks:
+  vulnlab:
+    driver: bridge

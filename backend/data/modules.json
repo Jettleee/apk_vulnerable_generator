@@ -1,0 +1,717 @@
+[
+  {
+    "id": "exported-component",
+    "name": "Exported Component",
+    "category": "android",
+    "difficulty": "beginner",
+    "description": "An Android Activity or Service is marked android:exported=\"true\" without access control, allowing any installed app to invoke it.",
+    "risk": "Malicious apps can launch exported components to bypass authentication screens, trigger sensitive operations, or access protected UI without credentials.",
+    "learningObjective": "Identify unintentionally exported Android components in AndroidManifest.xml and restrict access using android:exported=false or signature-level permissions.",
+    "vulnerableExample": "<!-- AndroidManifest.xml (Vulnerable) -->\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    package=\"com.training.vulnapp\">\n\n    <application\n        android:label=\"Training App\"\n        android:theme=\"@style/AppTheme\">\n\n        <activity\n            android:name=\".MainActivity\"\n            android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n\n        <!-- VULNERABLE: AdminActivity exported, any app can launch it -->\n        <activity\n            android:name=\".AdminActivity\"\n            android:exported=\"true\" />\n\n        <!-- VULNERABLE: DataSyncService exported without permission -->\n        <service\n            android:name=\".DataSyncService\"\n            android:exported=\"true\" />\n\n    </application>\n</manifest>",
+    "fixedExample": "<!-- AndroidManifest.xml (Fixed) -->\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    package=\"com.training.vulnapp\">\n\n    <application\n        android:label=\"Training App\"\n        android:theme=\"@style/AppTheme\">\n\n        <activity\n            android:name=\".MainActivity\"\n            android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n\n        <!-- FIXED: AdminActivity not exported -->\n        <activity\n            android:name=\".AdminActivity\"\n            android:exported=\"false\" />\n\n        <!-- FIXED: DataSyncService not exported -->\n        <service\n            android:name=\".DataSyncService\"\n            android:exported=\"false\" />\n\n    </application>\n</manifest>",
+    "studentTask": "1. Open the vulnerable AndroidManifest.xml above.\n2. Identify all components with android:exported=\"true\".\n3. List the attack surface: which components can an external app reach?\n4. Simulate an external launch:\n   adb shell am start -n com.training.vulnapp/.AdminActivity\n5. Observe: AdminActivity opens without authentication.\n6. Explain in writing why this is a security risk.\n7. Fix the manifest: set android:exported=\"false\" on AdminActivity and DataSyncService.\n8. Re-test: verify the adb command now fails.",
+    "teacherCorrection": "The vulnerability is android:exported=\"true\" on AdminActivity and DataSyncService with no permission requirement. Any app on the device can send an Intent to launch AdminActivity, bypassing the login flow entirely.\n\nCorrect fix: set android:exported=\"false\" for components not intended for inter-app use. If inter-app access is required, add android:permission=\"com.training.vulnapp.INTERNAL\" with protectionLevel=\"signature\" so only apps signed with the same key can invoke them.",
+    "testCheck": "- Confirm android:exported=\"true\" present on AdminActivity in vulnerable version\n- Confirm adb shell am start -n com.training.vulnapp/.AdminActivity succeeds in vulnerable version\n- Confirm android:exported=\"false\" set on AdminActivity in fixed version\n- Confirm adb launch returns SecurityException or fails in fixed version\n- Confirm DataSyncService also restricted in fixed version",
+    "checklist": [
+      "Located android:exported=\"true\" on AdminActivity in manifest",
+      "Located android:exported=\"true\" on DataSyncService in manifest",
+      "Explained risk of unauthenticated external component access",
+      "Demonstrated external launch via adb am start in vulnerable version",
+      "Applied android:exported=\"false\" to both components in fix",
+      "Verified fix prevents external access"
+    ],
+    "qcm": [
+      {
+        "question": "What does android:exported=\"true\" do for an Activity?",
+        "choices": [
+          "A. Encrypts the activity data",
+          "B. Allows other apps to start this activity via Intent",
+          "C. Makes the activity visible in the launcher",
+          "D. Disables the back button"
+        ],
+        "correct": "B",
+        "explanation": "android:exported=\"true\" allows components from other apps to start this activity by sending an explicit or implicit Intent, even without user interaction."
+      },
+      {
+        "question": "What is the default value of android:exported when NO intent-filter is defined?",
+        "choices": [
+          "A. true",
+          "B. false",
+          "C. depends on minSdkVersion",
+          "D. undefined — compilation fails"
+        ],
+        "correct": "B",
+        "explanation": "Without an intent-filter, android:exported defaults to false. When an intent-filter is present, it defaults to true before API 31 and requires explicit declaration on API 31+."
+      },
+      {
+        "question": "Which adb command launches a specific Activity by component name?",
+        "choices": [
+          "A. adb shell pm list activities com.example.app",
+          "B. adb shell am start -n com.example.app/.AdminActivity",
+          "C. adb shell intent com.example.app/.AdminActivity",
+          "D. adb shell dumpsys activity com.example.app"
+        ],
+        "correct": "B",
+        "explanation": "adb shell am start -n <package>/<activity> uses the ActivityManager to start a specific component. If exported=true, this works from any context."
+      },
+      {
+        "question": "How can you share an exported component only with apps signed by the same developer?",
+        "choices": [
+          "A. android:exported=\"true\" with no permission",
+          "B. android:exported=\"false\"",
+          "C. android:permission with protectionLevel=\"signature\"",
+          "D. android:enabled=\"false\""
+        ],
+        "correct": "C",
+        "explanation": "A signature-level permission restricts access to apps signed with the same certificate, enabling controlled inter-app communication without exposing the component to all apps."
+      },
+      {
+        "question": "From Android 12 (API 31), what happens if you add an intent-filter but omit android:exported?",
+        "choices": [
+          "A. The app compiles and exported defaults to false",
+          "B. The app fails to install silently",
+          "C. The build fails with a manifest error",
+          "D. The component is hidden from the launcher only"
+        ],
+        "correct": "C",
+        "explanation": "Android 12 (API 31) requires an explicit android:exported declaration for components with intent-filters. Missing it causes a build or install error."
+      }
+    ],
+    "rubric": [
+      { "criterion": "Component identification in manifest", "weight": "20%" },
+      { "criterion": "Risk and attack scenario explanation", "weight": "20%" },
+      { "criterion": "External access demonstration via adb", "weight": "20%" },
+      { "criterion": "Correct fix applied in manifest", "weight": "25%" },
+      { "criterion": "Fix verification and testing", "weight": "15%" }
+    ]
+  },
+  {
+    "id": "secret-dummy",
+    "name": "Secret Dummy",
+    "category": "android",
+    "difficulty": "beginner",
+    "description": "A fake API key and dummy credentials are hardcoded directly in Java source code, making them visible to anyone who decompiles the APK.",
+    "risk": "Hardcoded secrets are extractable with apktool, jadx, or strings command. Even fake-looking keys can reveal architecture and naming conventions, and real keys stored this way are immediately compromised.",
+    "learningObjective": "Understand why hardcoded secrets are dangerous, locate them in decompiled code, and learn secure alternatives such as environment-injected BuildConfig fields or secure vaults.",
+    "vulnerableExample": "// MainActivity.java (Vulnerable)\n// WARNING: Dummy fake credentials for training only — never hardcode real secrets\npackage com.training.vulnapp;\n\nimport android.os.Bundle;\nimport android.util.Log;\nimport androidx.appcompat.app.AppCompatActivity;\n\npublic class MainActivity extends AppCompatActivity {\n\n    // VULNERABLE: Hardcoded fake secrets visible in source and decompiled APK\n    private static final String API_KEY    = \"DUMMY-FAKE-KEY-1234567890ABCDEF\";\n    private static final String DB_PASS    = \"dummy-db-password-training-9876\";\n    private static final String ADMIN_TOKEN = \"fake-admin-token-training-only-00\";\n\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n\n        // Sends hardcoded key — extractable by reversing the APK\n        connectToServer(API_KEY);\n    }\n\n    private void connectToServer(String key) {\n        Log.d(\"AUTH\", \"Connecting with key: \" + key); // Also leaks in logs\n    }\n}",
+    "fixedExample": "// MainActivity.java (Fixed)\n// Secrets injected at build time via environment variables, not hardcoded\npackage com.training.vulnapp;\n\nimport android.os.Bundle;\nimport android.util.Log;\nimport androidx.appcompat.app.AppCompatActivity;\n\npublic class MainActivity extends AppCompatActivity {\n\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n\n        // BuildConfig.API_KEY is injected from CI/CD environment, not hardcoded\n        String apiKey = BuildConfig.API_KEY;\n        if (apiKey == null || apiKey.isEmpty()) {\n            Log.e(\"AUTH\", \"API key not configured\");\n            return;\n        }\n        connectToServer(apiKey);\n    }\n\n    private void connectToServer(String key) {\n        // Do not log the key value\n        Log.d(\"AUTH\", \"Connecting to server\");\n    }\n}\n\n// In build.gradle (app module):\n// android {\n//   defaultConfig {\n//     buildConfigField \"String\", \"API_KEY\",\n//       \"\\\"${System.getenv('APP_API_KEY') ?: ''}\\\"\"\n//   }\n// }\n//\n// For production: use Android Keystore or a secrets manager\n// Never commit .env files or secrets to version control",
+    "studentTask": "1. Read the vulnerable MainActivity.java above.\n2. Identify all hardcoded secrets (API_KEY, DB_PASS, ADMIN_TOKEN).\n3. Simulate decompiling: search for the dummy string DUMMY-FAKE-KEY in the source.\n4. Explain why a decompiled APK (jadx, apktool) exposes these values.\n5. Run: strings libtraining.so | grep DUMMY (if native library exists)\n6. Explain the risk of committing secrets to version control.\n7. Rewrite MainActivity to read the API key from BuildConfig.API_KEY.\n8. Show how build.gradle injects the key from an environment variable.",
+    "teacherCorrection": "Hardcoded secrets are always extractable: jadx, apktool, and strings can find them in minutes. The dummy values here (DUMMY-FAKE-KEY-1234567890ABCDEF) are obviously fake, but the pattern is identical to real secrets.\n\nSecure fix: inject secrets at build time via BuildConfig fields sourced from CI/CD environment variables. For runtime secrets, use Android Keystore or a remote secrets manager (e.g., HashiCorp Vault). Never store plaintext secrets in source code, version control, or log output.",
+    "testCheck": "- Confirm private static final String API_KEY = \"DUMMY...\" exists in vulnerable version\n- Confirm grep or strings finds the dummy key in vulnerable source\n- Confirm fixed version uses BuildConfig.API_KEY instead of a literal\n- Confirm no secret literal strings in fixed Java source\n- Confirm build.gradle shows environment variable injection pattern\n- Confirm logs do not print the key value in fixed version",
+    "checklist": [
+      "Found hardcoded API_KEY literal in vulnerable MainActivity.java",
+      "Found hardcoded DB_PASS and ADMIN_TOKEN literals",
+      "Explained how APK decompilation exposes these values",
+      "Explained risk of committing secrets to version control",
+      "Rewrote code to use BuildConfig.API_KEY",
+      "Showed build.gradle environment variable injection",
+      "Confirmed no secret literals remain in fixed version",
+      "Confirmed key is not logged in fixed version"
+    ],
+    "qcm": [
+      {
+        "question": "Which tool can extract hardcoded strings from a compiled Android APK?",
+        "choices": [
+          "A. adb backup only",
+          "B. jadx or apktool to decompile and read Java/smali source",
+          "C. Android Studio source view only",
+          "D. Only root access can expose APK contents"
+        ],
+        "correct": "B",
+        "explanation": "jadx and apktool decompile APKs to Java or smali bytecode, making all hardcoded string literals immediately visible to an attacker."
+      },
+      {
+        "question": "What is the safest place to store a mobile app API key?",
+        "choices": [
+          "A. Hardcoded in a private static final field",
+          "B. In a BuildConfig field injected from a CI/CD environment variable",
+          "C. In a file named secrets.xml inside res/values",
+          "D. Base64-encoded in the source code"
+        ],
+        "correct": "B",
+        "explanation": "BuildConfig fields injected from environment variables are not in source code, not committed to version control, and can be rotated without code changes. Base64 encoding is not encryption."
+      },
+      {
+        "question": "Why is Base64-encoding a secret before hardcoding it NOT a security fix?",
+        "choices": [
+          "A. Base64 is weak encryption",
+          "B. Base64 is encoding, not encryption — trivially reversible",
+          "C. Android strips Base64 strings at compile time",
+          "D. Base64 increases APK size too much"
+        ],
+        "correct": "B",
+        "explanation": "Base64 is an encoding scheme, not encryption. Any attacker can decode it in seconds. It provides no real protection against secret extraction."
+      },
+      {
+        "question": "What does the strings command find in a compiled .so library?",
+        "choices": [
+          "A. Only runtime strings allocated on the heap",
+          "B. All printable character sequences including hardcoded literals",
+          "C. Only strings longer than 128 characters",
+          "D. Only encrypted strings"
+        ],
+        "correct": "B",
+        "explanation": "The strings command finds all sequences of printable characters in binary files, including hardcoded constants in native .so libraries."
+      },
+      {
+        "question": "For runtime secrets that cannot be injected at build time, what is the recommended Android approach?",
+        "choices": [
+          "A. Hardcode them with obfuscation",
+          "B. Store in SharedPreferences without encryption",
+          "C. Use Android Keystore with EncryptedSharedPreferences",
+          "D. Store in a SQLite database column named 'secret'"
+        ],
+        "correct": "C",
+        "explanation": "Android Keystore provides hardware-backed key storage. EncryptedSharedPreferences uses Keystore to encrypt data at rest, protecting it even on rooted devices."
+      }
+    ],
+    "rubric": [
+      { "criterion": "Secret identification in source code", "weight": "20%" },
+      { "criterion": "Decompilation/extraction explanation", "weight": "20%" },
+      { "criterion": "Version control risk explanation", "weight": "15%" },
+      { "criterion": "Correct BuildConfig fix implementation", "weight": "30%" },
+      { "criterion": "Log hygiene in fixed version", "weight": "15%" }
+    ]
+  },
+  {
+    "id": "cleartext-config",
+    "name": "Cleartext Config",
+    "category": "android",
+    "difficulty": "beginner",
+    "description": "The Android Network Security Config permits cleartext (unencrypted HTTP) traffic, exposing all network communication to interception.",
+    "risk": "An attacker on the same network (coffee shop WiFi, corporate MITM proxy) can read all HTTP traffic in plaintext, including credentials, session tokens, and personal data.",
+    "learningObjective": "Understand Android Network Security Config, identify cleartext traffic permissions, and enforce HTTPS-only communication by setting cleartextTrafficPermitted=false.",
+    "vulnerableExample": "<!-- res/xml/network_security_config.xml (Vulnerable) -->\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<network-security-config>\n    <!-- VULNERABLE: Allows unencrypted HTTP for all domains -->\n    <base-config cleartextTrafficPermitted=\"true\">\n        <trust-anchors>\n            <certificates src=\"system\" />\n        </trust-anchors>\n    </base-config>\n</network-security-config>\n\n<!-- AndroidManifest.xml reference (Vulnerable) -->\n<application\n    android:networkSecurityConfig=\"@xml/network_security_config\"\n    android:usesCleartextTraffic=\"true\"\n    android:label=\"@string/app_name\">\n    <!-- usesCleartextTraffic=\"true\" also enables cleartext globally -->\n</application>",
+    "fixedExample": "<!-- res/xml/network_security_config.xml (Fixed) -->\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<network-security-config>\n    <!-- FIXED: All traffic must use HTTPS -->\n    <base-config cleartextTrafficPermitted=\"false\">\n        <trust-anchors>\n            <certificates src=\"system\" />\n        </trust-anchors>\n    </base-config>\n    <!-- Debug builds only: allow cleartext to local test server -->\n    <!-- Remove or disable in production releases -->\n</network-security-config>\n\n<!-- AndroidManifest.xml reference (Fixed) -->\n<application\n    android:networkSecurityConfig=\"@xml/network_security_config\"\n    android:label=\"@string/app_name\">\n    <!-- android:usesCleartextTraffic attribute removed -->\n</application>",
+    "studentTask": "1. Open the vulnerable network_security_config.xml above.\n2. Identify the attribute that permits cleartext traffic.\n3. Explain what a MITM attack on HTTP traffic looks like.\n4. Use Burp Suite or mitmproxy in a lab environment to intercept HTTP traffic.\n5. Observe that unencrypted request bodies are visible.\n6. Fix the config: set cleartextTrafficPermitted=\"false\".\n7. Remove android:usesCleartextTraffic=\"true\" from the manifest.\n8. Verify HTTPS connections still work; HTTP connections are blocked.",
+    "teacherCorrection": "The vulnerability is cleartextTrafficPermitted=\"true\" combined with android:usesCleartextTraffic=\"true\" in the manifest. These settings allow the app to send HTTP requests without TLS, making all traffic readable on the network.\n\nFix: set cleartextTrafficPermitted=\"false\" in the Network Security Config and remove the usesCleartextTraffic flag. All server endpoints must use HTTPS with valid certificates. If a debug-only local server requires HTTP, restrict it to debug builds using a separate debug/network_security_config.xml.",
+    "testCheck": "- Confirm cleartextTrafficPermitted=\"true\" in vulnerable config\n- Confirm android:usesCleartextTraffic=\"true\" in vulnerable manifest\n- Confirm HTTP traffic is interceptable by proxy in vulnerable version\n- Confirm cleartextTrafficPermitted=\"false\" in fixed config\n- Confirm usesCleartextTraffic attribute removed from fixed manifest\n- Confirm app blocks HTTP requests and uses HTTPS in fixed version",
+    "checklist": [
+      "Found cleartextTrafficPermitted=\"true\" in network_security_config.xml",
+      "Found android:usesCleartextTraffic=\"true\" in AndroidManifest.xml",
+      "Explained MITM interception risk on HTTP traffic",
+      "Demonstrated traffic interception in lab with proxy (optional)",
+      "Set cleartextTrafficPermitted=\"false\" in fixed config",
+      "Removed usesCleartextTraffic flag from fixed manifest",
+      "Verified HTTPS still works in fixed version"
+    ],
+    "qcm": [
+      {
+        "question": "What does cleartextTrafficPermitted=\"true\" enable?",
+        "choices": [
+          "A. Encrypted traffic only using TLS",
+          "B. Unencrypted HTTP traffic in addition to HTTPS",
+          "C. Certificate pinning bypass",
+          "D. VPN traffic routing"
+        ],
+        "correct": "B",
+        "explanation": "cleartextTrafficPermitted=\"true\" allows the app to make HTTP requests without TLS, exposing all traffic to interception on the network."
+      },
+      {
+        "question": "What file defines Android Network Security Config?",
+        "choices": [
+          "A. AndroidManifest.xml directly",
+          "B. res/xml/network_security_config.xml referenced from the manifest",
+          "C. res/values/network.xml",
+          "D. gradle.properties"
+        ],
+        "correct": "B",
+        "explanation": "Network Security Config is an XML file placed in res/xml/ and referenced by android:networkSecurityConfig in the <application> tag."
+      },
+      {
+        "question": "A user connects to a public WiFi hotspot. The app sends login credentials via HTTP. What can a network attacker see?",
+        "choices": [
+          "A. Nothing — Android encrypts all traffic by default",
+          "B. The full plaintext username and password",
+          "C. Only the domain name, not the content",
+          "D. Only encrypted hashes"
+        ],
+        "correct": "B",
+        "explanation": "HTTP traffic is unencrypted. An attacker on the same WiFi network can use ARP spoofing or a rogue access point to capture the full plaintext request body including credentials."
+      },
+      {
+        "question": "Which default Android API level started blocking cleartext traffic by default?",
+        "choices": [
+          "A. API 21 (Android 5.0)",
+          "B. API 28 (Android 9 Pie)",
+          "C. API 33 (Android 13)",
+          "D. API 16 (Android 4.1)"
+        ],
+        "correct": "B",
+        "explanation": "From Android 9 (API 28), cleartext traffic is blocked by default. Apps targeting API 28+ must explicitly enable it via Network Security Config if needed."
+      },
+      {
+        "question": "What is the safest way to allow HTTP only to a local development server without affecting production?",
+        "choices": [
+          "A. Set cleartextTrafficPermitted=\"true\" in base-config",
+          "B. Use a domain-specific config in debug builds only for 127.0.0.1",
+          "C. Set android:usesCleartextTraffic=\"true\" permanently",
+          "D. Disable certificate validation"
+        ],
+        "correct": "B",
+        "explanation": "A domain-specific override in a debug-only Network Security Config restricts cleartext to localhost only and is excluded from release builds, following the principle of least privilege."
+      }
+    ],
+    "rubric": [
+      { "criterion": "Cleartext configuration identification", "weight": "20%" },
+      { "criterion": "MITM risk explanation", "weight": "20%" },
+      { "criterion": "Lab traffic interception (optional demo)", "weight": "15%" },
+      { "criterion": "Correct config fix applied", "weight": "30%" },
+      { "criterion": "Fix verification", "weight": "15%" }
+    ]
+  },
+  {
+    "id": "sensitive-logs",
+    "name": "Sensitive Logs",
+    "category": "android",
+    "difficulty": "beginner",
+    "description": "Sensitive data such as passwords, tokens, and personal information is written to Android system logs using Log.d/Log.v/Log.i, making it readable via adb logcat.",
+    "risk": "Any app with READ_LOGS permission (or root, or adb access) can read logcat output. Sensitive data in logs persists in device logs even after logout, creating a long-lived exposure window.",
+    "learningObjective": "Identify sensitive data leakage in Android log calls, understand the risk of logcat exposure, and apply proper log hygiene by removing or redacting sensitive values from log output.",
+    "vulnerableExample": "// LoginActivity.java (Vulnerable)\npackage com.training.vulnapp;\n\nimport android.util.Log;\nimport androidx.appcompat.app.AppCompatActivity;\n\npublic class LoginActivity extends AppCompatActivity {\n\n    private void performLogin(String username, String password) {\n        // VULNERABLE: Logs plaintext password — visible in adb logcat\n        Log.d(\"LOGIN\", \"Attempting login for: \" + username);\n        Log.d(\"LOGIN\", \"Password received: \" + password);\n\n        String token = authenticateUser(username, password);\n\n        // VULNERABLE: Logs session token — replayable by attacker\n        Log.v(\"AUTH\",  \"Session token: \" + token);\n\n        // VULNERABLE: Full user object may contain PII\n        Log.i(\"DEBUG\", \"User object: \" + userObject.toString());\n    }\n\n    private String authenticateUser(String u, String p) {\n        // Fake auth returning dummy token\n        return \"FAKE-TOKEN-TRAINING-\" + u.hashCode();\n    }\n}",
+    "fixedExample": "// LoginActivity.java (Fixed)\npackage com.training.vulnapp;\n\nimport android.util.Log;\nimport androidx.appcompat.app.AppCompatActivity;\n\npublic class LoginActivity extends AppCompatActivity {\n\n    private void performLogin(String username, String password) {\n        // FIXED: Log only non-sensitive operational info\n        Log.d(\"LOGIN\", \"Login attempt received\");\n        // No password in logs\n        // No username in logs (PII)\n\n        String token = authenticateUser(username, password);\n\n        if (token != null) {\n            Log.d(\"AUTH\", \"Authentication succeeded\");\n            // No token value in logs\n        } else {\n            Log.d(\"AUTH\", \"Authentication failed\");\n        }\n        // No user object dump in logs\n    }\n\n    private String authenticateUser(String u, String p) {\n        return \"FAKE-TOKEN-TRAINING-\" + u.hashCode();\n    }\n\n    // Production best practice: use a logging framework with PII masking\n    // (e.g., Timber with a custom Tree that strips sensitive fields)\n    // Disable verbose/debug logs in release builds via BuildConfig.DEBUG check\n}",
+    "studentTask": "1. Read the vulnerable LoginActivity.java above.\n2. Identify every Log call that outputs sensitive data.\n3. Explain what an attacker with adb access can see.\n4. Run: adb logcat | grep LOGIN (in a lab with the vulnerable app)\n5. Observe password and token appearing in log output.\n6. Explain why session tokens in logs are especially dangerous.\n7. Fix the code: remove or redact all sensitive log calls.\n8. Verify that after the fix, no sensitive data appears in logcat.",
+    "teacherCorrection": "Three vulnerabilities exist: (1) plaintext password logged — Log.d(\"LOGIN\", \"Password received: \" + password); (2) session token logged — Log.v(\"AUTH\", \"Session token: \" + token); (3) full user object serialized to log — may contain email, phone, address.\n\nFix: remove all logging of credentials, tokens, and PII. Log only operational events (login attempt, success, failure) without values. In production, use BuildConfig.DEBUG to gate verbose logging, and use a logging library with a PII-masking output tree.",
+    "testCheck": "- Confirm Log.d with password string exists in vulnerable version\n- Confirm Log.v with token string exists in vulnerable version\n- Confirm adb logcat shows password value in vulnerable app\n- Confirm no password/token/PII strings in log calls in fixed version\n- Confirm adb logcat shows only operational messages in fixed version\n- Confirm BuildConfig.DEBUG gate present for any remaining debug logs",
+    "checklist": [
+      "Identified Log.d call printing password in vulnerable code",
+      "Identified Log.v call printing session token",
+      "Identified Log.i call printing full user object",
+      "Explained adb logcat access vector",
+      "Explained why token logging enables session replay",
+      "Removed all sensitive log calls in fixed version",
+      "Added operational-only log messages (no sensitive values)",
+      "Verified no sensitive data in logcat after fix"
+    ],
+    "qcm": [
+      {
+        "question": "How can an attacker read Android logcat output without root?",
+        "choices": [
+          "A. Logcat is only accessible with root — no other way",
+          "B. Via adb logcat if USB debugging is enabled, or via READ_LOGS permission on older Android",
+          "C. Only via a MITM proxy",
+          "D. Only via a malicious app with INTERNET permission"
+        ],
+        "correct": "B",
+        "explanation": "adb logcat reads all logs if USB debugging is enabled. On Android < 4.1, READ_LOGS permission allowed any app to read system logs. On modern Android, apps cannot read other apps' logs without adb/root."
+      },
+      {
+        "question": "Why is logging a session token especially dangerous compared to logging a username?",
+        "choices": [
+          "A. Tokens are longer strings and fill up log storage",
+          "B. A token can be used to impersonate the user without knowing the password",
+          "C. Tokens are always encrypted in logs",
+          "D. Tokens expire in 1 second so it does not matter"
+        ],
+        "correct": "B",
+        "explanation": "A session token authenticates the user for an entire session. An attacker who captures the token from logs can replay it to make authenticated requests without needing credentials."
+      },
+      {
+        "question": "What is the best way to prevent debug logs from appearing in production releases?",
+        "choices": [
+          "A. Delete all Log calls before release",
+          "B. Change Log.d to Log.e in production",
+          "C. Gate verbose logs behind BuildConfig.DEBUG checks",
+          "D. Use Log.w instead of Log.d"
+        ],
+        "correct": "C",
+        "explanation": "BuildConfig.DEBUG is false in release builds. Wrapping debug log calls with if (BuildConfig.DEBUG) prevents them from executing in production without removing them from code."
+      },
+      {
+        "question": "Which log level is most likely to appear in production crash reports and analytics?",
+        "choices": [
+          "A. Log.v (verbose)",
+          "B. Log.d (debug)",
+          "C. Log.e (error) and Log.w (warn)",
+          "D. All levels equally"
+        ],
+        "correct": "C",
+        "explanation": "Log.e and Log.w are typically included in crash reporting (e.g., Firebase Crashlytics). Verbose and debug logs are usually excluded from production reporting pipelines but can still appear in device logs."
+      },
+      {
+        "question": "What is PII in the context of log hygiene?",
+        "choices": [
+          "A. Program Instruction Index — CPU register",
+          "B. Personally Identifiable Information — data that can identify a person",
+          "C. Private Internal Interface — Android system service",
+          "D. Post-Install Integrity — APK verification"
+        ],
+        "correct": "B",
+        "explanation": "PII (Personally Identifiable Information) includes names, email addresses, phone numbers, passwords, and similar data. Logging PII violates user privacy and may violate regulations like GDPR."
+      }
+    ],
+    "rubric": [
+      { "criterion": "Sensitive log call identification", "weight": "25%" },
+      { "criterion": "Attack vector explanation (adb/READ_LOGS)", "weight": "20%" },
+      { "criterion": "Token replay risk explanation", "weight": "20%" },
+      { "criterion": "All sensitive logs removed in fix", "weight": "25%" },
+      { "criterion": "Verified no leakage in fixed version", "weight": "10%" }
+    ]
+  },
+  {
+    "id": "insecure-file-permission",
+    "name": "Insecure File Permission",
+    "category": "android",
+    "difficulty": "intermediate",
+    "description": "A file containing fake sensitive data is created with MODE_WORLD_READABLE, allowing any app on the device to read its contents.",
+    "risk": "Any installed app can open and read world-readable files created by another app, bypassing Android's sandboxing model and exposing stored data.",
+    "learningObjective": "Understand Android file permission modes, identify files created with insecure permissions, and apply MODE_PRIVATE for internal file storage.",
+    "vulnerableExample": "// FileHelper.java (Vulnerable)\npackage com.training.vulnapp;\n\nimport android.content.Context;\nimport android.os.Environment;\nimport android.util.Log;\nimport java.io.File;\nimport java.io.FileOutputStream;\nimport java.io.IOException;\n\npublic class FileHelper {\n\n    public void saveUserData(Context context, String data) {\n        try {\n            // VULNERABLE: MODE_WORLD_READABLE allows any app to read this file\n            FileOutputStream fos = context.openFileOutput(\n                \"user_data.txt\",\n                Context.MODE_WORLD_READABLE  // Deprecated and dangerous\n            );\n            fos.write(data.getBytes());\n            fos.close();\n            Log.d(\"FILE\", \"Saved user data: \" + data); // Also logs sensitive data\n\n            // VULNERABLE: External storage readable by any app with READ_EXTERNAL_STORAGE\n            File externalFile = new File(\n                Environment.getExternalStorageDirectory(),\n                \"sensitive_backup.txt\"\n            );\n            FileOutputStream extFos = new FileOutputStream(externalFile);\n            extFos.write(data.getBytes());\n            extFos.close();\n\n        } catch (IOException e) {\n            Log.e(\"FILE\", \"Error writing file: \" + e.getMessage());\n        }\n    }\n}",
+    "fixedExample": "// FileHelper.java (Fixed)\npackage com.training.vulnapp;\n\nimport android.content.Context;\nimport android.util.Log;\nimport java.io.FileOutputStream;\nimport java.io.IOException;\n\npublic class FileHelper {\n\n    public void saveUserData(Context context, String data) {\n        try {\n            // FIXED: MODE_PRIVATE restricts access to this app only\n            FileOutputStream fos = context.openFileOutput(\n                \"user_data.txt\",\n                Context.MODE_PRIVATE  // Default and correct\n            );\n            fos.write(data.getBytes());\n            fos.close();\n            Log.d(\"FILE\", \"User data saved successfully\"); // No data value in log\n\n            // For sensitive data: also consider encryption at rest\n            // Use Jetpack Security EncryptedFile:\n            // EncryptedFile encryptedFile = new EncryptedFile.Builder(\n            //     context, new File(context.getFilesDir(), \"user_data.enc\"),\n            //     masterKey, EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB\n            // ).build();\n\n            // Do NOT store sensitive data on external storage\n\n        } catch (IOException e) {\n            Log.e(\"FILE\", \"Write failed\"); // No exception details that reveal data\n        }\n    }\n}",
+    "studentTask": "1. Read the vulnerable FileHelper.java above.\n2. Identify the MODE_WORLD_READABLE flag and explain what it permits.\n3. Explain the additional risk of writing to external storage.\n4. Write a test scenario: how can App B read the file created by App A using world-readable mode?\n5. Fix the code: replace MODE_WORLD_READABLE with MODE_PRIVATE.\n6. Remove external storage write of sensitive data.\n7. Add a comment explaining why EncryptedFile adds an extra layer of protection.\n8. Verify the fix: confirm another app cannot read the private file.",
+    "teacherCorrection": "Two vulnerabilities: (1) MODE_WORLD_READABLE allows any app to open and read the file — this mode is deprecated since API 17 and throws SecurityException on API 24+, but it represents a dangerous historical pattern; (2) writing sensitive data to external storage makes it readable by any app with READ_EXTERNAL_STORAGE permission.\n\nFix: use MODE_PRIVATE for all internal file operations. For sensitive data, use EncryptedFile from Jetpack Security. Never write sensitive data to external storage. Remove data values from log output.",
+    "testCheck": "- Confirm MODE_WORLD_READABLE in vulnerable FileHelper.java\n- Confirm external storage write of sensitive data in vulnerable version\n- Confirm Log.d prints data value in vulnerable version\n- Confirm MODE_PRIVATE in fixed FileHelper.java\n- Confirm external storage write removed in fixed version\n- Confirm Log.d does not print data value in fixed version\n- Comment about EncryptedFile present in fixed version",
+    "checklist": [
+      "Identified MODE_WORLD_READABLE in vulnerable code",
+      "Identified external storage write with sensitive data",
+      "Explained cross-app file access attack scenario",
+      "Replaced MODE_WORLD_READABLE with MODE_PRIVATE",
+      "Removed sensitive data write to external storage",
+      "Removed sensitive data value from log call",
+      "Added comment about EncryptedFile for extra protection",
+      "Verified private file inaccessible from other app context"
+    ],
+    "qcm": [
+      {
+        "question": "What does Context.MODE_WORLD_READABLE allow?",
+        "choices": [
+          "A. Only the app and system can read the file",
+          "B. Any installed app on the device can read the file",
+          "C. The file is readable over the network",
+          "D. Only apps with the same signature can read the file"
+        ],
+        "correct": "B",
+        "explanation": "MODE_WORLD_READABLE allows any application installed on the device to read the file, completely bypassing Android's per-app sandbox isolation."
+      },
+      {
+        "question": "From which Android API level is MODE_WORLD_READABLE deprecated?",
+        "choices": [
+          "A. API 16",
+          "B. API 17",
+          "C. API 23",
+          "D. API 28"
+        ],
+        "correct": "B",
+        "explanation": "MODE_WORLD_READABLE was deprecated in API 17 (Android 4.2). On API 24+, it throws a SecurityException. Its use indicates outdated or vulnerable code."
+      },
+      {
+        "question": "Why is storing sensitive data on external storage risky?",
+        "choices": [
+          "A. External storage has less space than internal storage",
+          "B. Any app with READ_EXTERNAL_STORAGE permission can read all files there",
+          "C. External storage is always encrypted so there is no risk",
+          "D. Only rooted devices can access external storage"
+        ],
+        "correct": "B",
+        "explanation": "External storage is shared storage. Any app with READ_EXTERNAL_STORAGE permission (granted by user) can read any file there. Sensitive data must stay in app-private internal storage."
+      },
+      {
+        "question": "What is the correct file mode for creating an internal file accessible only to your app?",
+        "choices": [
+          "A. Context.MODE_WORLD_READABLE",
+          "B. Context.MODE_WORLD_WRITEABLE",
+          "C. Context.MODE_PRIVATE",
+          "D. Context.MODE_APPEND"
+        ],
+        "correct": "C",
+        "explanation": "Context.MODE_PRIVATE is the default and correct mode. Files created with this mode are accessible only by the creating app and cannot be read by other apps."
+      },
+      {
+        "question": "What additional protection does Jetpack Security EncryptedFile provide over MODE_PRIVATE?",
+        "choices": [
+          "A. No additional protection — they are equivalent",
+          "B. Encryption at rest so even root access or device backup cannot read plaintext",
+          "C. Network encryption for file transfers",
+          "D. Protection against other apps with the same signature"
+        ],
+        "correct": "B",
+        "explanation": "EncryptedFile uses AES-256-GCM to encrypt file contents. Even if an attacker gains root access or extracts the file via a backup, they cannot read the plaintext without the key stored in Android Keystore."
+      }
+    ],
+    "rubric": [
+      { "criterion": "File permission mode identification", "weight": "20%" },
+      { "criterion": "External storage risk explanation", "weight": "20%" },
+      { "criterion": "Cross-app access attack scenario", "weight": "20%" },
+      { "criterion": "Correct MODE_PRIVATE fix applied", "weight": "25%" },
+      { "criterion": "EncryptedFile recommendation included", "weight": "15%" }
+    ]
+  },
+  {
+    "id": "weak-input-validation",
+    "name": "Weak Input Validation",
+    "category": "secure-coding",
+    "difficulty": "intermediate",
+    "description": "User input is passed directly to database queries and UI components without sanitization or type checking, enabling SQL injection and application crashes.",
+    "risk": "Unvalidated input enables SQL injection attacks (data exfiltration, modification), integer parsing crashes (denial of service), and XSS-equivalent injection in WebView contexts.",
+    "learningObjective": "Identify input validation failures, understand parameterized queries as SQL injection prevention, and implement type-safe validation with whitelist patterns.",
+    "vulnerableExample": "// ProfileActivity.java (Vulnerable)\npackage com.training.vulnapp;\n\nimport android.database.Cursor;\nimport android.database.sqlite.SQLiteDatabase;\nimport android.util.Log;\nimport androidx.appcompat.app.AppCompatActivity;\n\npublic class ProfileActivity extends AppCompatActivity {\n\n    private SQLiteDatabase database;\n\n    private void searchUser(String username) {\n        // VULNERABLE: String concatenation in SQL query — SQL injection\n        String query = \"SELECT * FROM users WHERE username = '\" + username + \"'\";\n        // Attacker input: ' OR '1'='1  --> dumps entire users table\n        Cursor cursor = database.rawQuery(query, null);\n        Log.d(\"DB\", \"Query: \" + query); // Also logs the injected query\n    }\n\n    private void setDisplayName(String name) {\n        // VULNERABLE: No length check, no character whitelist\n        // Long input causes UI overflow; special chars cause display issues\n        tvDisplayName.setText(name);\n    }\n\n    private void saveAge(String ageInput) {\n        // VULNERABLE: No type check before parse — crashes on non-numeric input\n        int age = Integer.parseInt(ageInput); // NumberFormatException if not a number\n        if (age > 0) storeAge(age);\n    }\n}",
+    "fixedExample": "// ProfileActivity.java (Fixed)\npackage com.training.vulnapp;\n\nimport android.database.Cursor;\nimport android.database.sqlite.SQLiteDatabase;\nimport android.text.TextUtils;\nimport android.util.Log;\nimport androidx.appcompat.app.AppCompatActivity;\nimport java.util.regex.Pattern;\n\npublic class ProfileActivity extends AppCompatActivity {\n\n    private static final int MAX_NAME_LEN = 32;\n    private static final Pattern NAME_PATTERN = Pattern.compile(\"^[a-zA-Z0-9_.-]+$\");\n    private SQLiteDatabase database;\n\n    private void searchUser(String username) {\n        // FIXED: Validate input before use\n        if (username == null || username.isEmpty()) {\n            showError(\"Username cannot be empty\");\n            return;\n        }\n        if (username.length() > MAX_NAME_LEN) {\n            showError(\"Username too long\");\n            return;\n        }\n        if (!NAME_PATTERN.matcher(username).matches()) {\n            showError(\"Username contains invalid characters\");\n            return;\n        }\n\n        // FIXED: Parameterized query prevents SQL injection\n        Cursor cursor = database.rawQuery(\n            \"SELECT * FROM users WHERE username = ?\",\n            new String[]{ username }\n        );\n        Log.d(\"DB\", \"User lookup executed\"); // No query details in log\n    }\n\n    private void setDisplayName(String name) {\n        if (name == null || name.length() > MAX_NAME_LEN) return;\n        // FIXED: Encode HTML entities if used in WebView contexts\n        tvDisplayName.setText(TextUtils.htmlEncode(name));\n    }\n\n    private void saveAge(String ageInput) {\n        // FIXED: Handle parse error and validate range\n        try {\n            int age = Integer.parseInt(ageInput.trim());\n            if (age < 1 || age > 150) {\n                showError(\"Age out of valid range\");\n                return;\n            }\n            storeAge(age);\n        } catch (NumberFormatException e) {\n            showError(\"Age must be a numeric value\");\n        }\n    }\n}",
+    "studentTask": "1. Read the vulnerable ProfileActivity.java above.\n2. Identify the SQL injection point in searchUser.\n3. Craft an injection payload: what input would dump all users? (e.g., ' OR '1'='1)\n4. Identify the missing input length and character validation in setDisplayName.\n5. Identify the missing type check in saveAge and explain what crashes it.\n6. Fix searchUser: replace string concatenation with a parameterized query.\n7. Fix setDisplayName: add length check and character whitelist.\n8. Fix saveAge: wrap Integer.parseInt in try-catch and add range validation.\n9. Test all three fixes with malicious inputs.",
+    "teacherCorrection": "Three vulnerabilities: (1) SQL injection via string concatenation — rawQuery with concatenated input allows ' OR '1'='1 to bypass WHERE clauses; (2) no length/character validation on display name allows overflow and injection into WebView; (3) no try-catch on Integer.parseInt crashes the app on non-numeric age input.\n\nFixes: (1) always use parameterized queries (? placeholders); (2) validate length and whitelist characters before use; (3) wrap parseInt in try-catch, validate range. These are the foundations of OWASP A03 Injection prevention.",
+    "testCheck": "- Confirm rawQuery with string concatenation in vulnerable version\n- Confirm ' OR '1'='1 input returns all rows in vulnerable version\n- Confirm non-numeric age input throws NumberFormatException in vulnerable version\n- Confirm parameterized query (? placeholder) in fixed searchUser\n- Confirm NAME_PATTERN whitelist validation in fixed setDisplayName\n- Confirm try-catch and range check in fixed saveAge\n- Confirm injection payload returns no extra rows in fixed version",
+    "checklist": [
+      "Identified SQL injection via string concatenation in searchUser",
+      "Crafted a working SQL injection payload",
+      "Identified missing length validation in setDisplayName",
+      "Identified missing type check and crash in saveAge",
+      "Replaced string concatenation with parameterized query",
+      "Added whitelist pattern validation for display name",
+      "Added try-catch and range validation for age",
+      "Tested all three fixed methods with malicious inputs"
+    ],
+    "qcm": [
+      {
+        "question": "What makes parameterized queries (prepared statements) safe against SQL injection?",
+        "choices": [
+          "A. They encrypt the SQL query",
+          "B. User input is passed as a data parameter, never interpolated into the query string",
+          "C. They limit query execution time",
+          "D. They validate input against a whitelist automatically"
+        ],
+        "correct": "B",
+        "explanation": "In parameterized queries, the SQL structure is fixed at compile time. User input is passed as a separate data binding, so special characters like quotes are treated as literal data, not SQL syntax."
+      },
+      {
+        "question": "What is the effect of the SQL injection payload ' OR '1'='1 in a login query?",
+        "choices": [
+          "A. It crashes the database server",
+          "B. It makes the WHERE clause always true, returning all rows",
+          "C. It encrypts the returned data",
+          "D. It creates a new admin user"
+        ],
+        "correct": "B",
+        "explanation": "' OR '1'='1 closes the string literal and adds a condition that is always true (1=1), causing the query to return all rows in the table regardless of the username value."
+      },
+      {
+        "question": "What is input whitelist validation?",
+        "choices": [
+          "A. Blocking known bad inputs (blacklist)",
+          "B. Only allowing input that matches a defined set of allowed characters/patterns",
+          "C. Logging all input for review",
+          "D. Encrypting input before storing"
+        ],
+        "correct": "B",
+        "explanation": "Whitelist validation defines what IS allowed (e.g., only alphanumeric + underscore) and rejects everything else. It is safer than blacklist validation, which tries to block known bad patterns."
+      },
+      {
+        "question": "Which OWASP Top 10 category covers SQL injection?",
+        "choices": [
+          "A. A01 Broken Access Control",
+          "B. A02 Cryptographic Failures",
+          "C. A03 Injection",
+          "D. A05 Security Misconfiguration"
+        ],
+        "correct": "C",
+        "explanation": "OWASP A03 Injection covers SQL injection, command injection, LDAP injection, and similar vulnerabilities where untrusted data is sent to an interpreter as part of a command or query."
+      },
+      {
+        "question": "Why should input validation happen on the server side even when the client already validates?",
+        "choices": [
+          "A. Server validation is faster than client validation",
+          "B. Client-side validation can be bypassed by intercepting or modifying the request",
+          "C. Server validation is required by Android API rules",
+          "D. Client validation only works on iOS"
+        ],
+        "correct": "B",
+        "explanation": "Client-side validation can be bypassed using tools like Burp Suite or by modifying API requests directly. Server-side validation is the authoritative security boundary."
+      }
+    ],
+    "rubric": [
+      { "criterion": "SQL injection identification and payload crafting", "weight": "25%" },
+      { "criterion": "Additional validation failure identification", "weight": "15%" },
+      { "criterion": "Parameterized query fix applied", "weight": "25%" },
+      { "criterion": "Whitelist and type validation fixes applied", "weight": "20%" },
+      { "criterion": "Fix testing with malicious inputs", "weight": "15%" }
+    ]
+  },
+  {
+    "id": "insecure-debug-mode",
+    "name": "Insecure Debug Mode",
+    "category": "android",
+    "difficulty": "beginner",
+    "description": "The Android application has android:debuggable=\"true\" hardcoded in the manifest, enabling debugging interfaces on production-like builds.",
+    "risk": "A debuggable app can be attached to with adb, inspected with Frida or jdb, have memory dumped, and have breakpoints inserted. This enables dynamic analysis and runtime manipulation by any attacker with USB or network access.",
+    "learningObjective": "Understand the risks of android:debuggable=\"true\" in production, locate the flag in AndroidManifest.xml, and learn why Gradle build system should control this flag automatically.",
+    "vulnerableExample": "<!-- AndroidManifest.xml (Vulnerable) -->\n<!-- VULNERABLE: android:debuggable=\"true\" hardcoded -->\n<!-- Enables adb attach, jdb, Frida injection, memory dump on any build -->\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    package=\"com.training.vulnapp\">\n\n    <application\n        android:debuggable=\"true\"\n        android:allowBackup=\"true\"\n        android:label=\"@string/app_name\"\n        android:theme=\"@style/AppTheme\">\n\n        <activity\n            android:name=\".MainActivity\"\n            android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n\n    </application>\n</manifest>\n\n<!-- Also vulnerable: debug flag check bypassed in code -->\n<!-- if (BuildConfig.DEBUG || true) { showDebugPanel(); } -->",
+    "fixedExample": "<!-- AndroidManifest.xml (Fixed) -->\n<!-- FIXED: android:debuggable attribute removed from manifest -->\n<!-- Gradle automatically sets debuggable=true for debug builds, false for release -->\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    package=\"com.training.vulnapp\">\n\n    <application\n        android:allowBackup=\"false\"\n        android:label=\"@string/app_name\"\n        android:theme=\"@style/AppTheme\">\n        <!-- android:debuggable is intentionally absent -->\n        <!-- Gradle build types control this automatically -->\n\n        <activity\n            android:name=\".MainActivity\"\n            android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n\n    </application>\n</manifest>\n\n<!-- build.gradle (correct build type configuration) -->\n<!-- android {\n    buildTypes {\n        debug {\n            debuggable true      // Set by Gradle for debug builds only\n            minifyEnabled false\n        }\n        release {\n            debuggable false     // Gradle sets this; manifest override is wrong\n            minifyEnabled true\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')\n        }\n    }\n} -->",
+    "studentTask": "1. Open the vulnerable AndroidManifest.xml above.\n2. Find android:debuggable=\"true\".\n3. Explain what an attacker can do with a debuggable app.\n4. Use adb to confirm debug mode:\n   adb shell run-as com.training.vulnapp ls /data/data/com.training.vulnapp\n5. Attempt to attach jdb (Java debugger) to the process.\n6. Fix the manifest: remove android:debuggable=\"true\".\n7. Show the build.gradle debug/release build types and explain how Gradle controls this.\n8. Also fix android:allowBackup=\"false\" if not already done.",
+    "teacherCorrection": "android:debuggable=\"true\" in the manifest enables the JDWP debug interface even in release-like builds. An attacker with ADB access can: attach a debugger (jdb), set breakpoints, dump memory, inspect variables, and use Frida without needing a rooted device.\n\nFix: remove android:debuggable from the manifest entirely. Gradle automatically sets it to true for debug builds and false for release builds. Never override this in the manifest. Additionally, android:allowBackup should be false to prevent backup-based data extraction.",
+    "testCheck": "- Confirm android:debuggable=\"true\" in vulnerable manifest\n- Confirm adb run-as or jdb attach succeeds on vulnerable build\n- Confirm android:debuggable attribute absent from fixed manifest\n- Confirm Gradle build.gradle shows correct debug/release build types\n- Confirm android:allowBackup=\"false\" in fixed manifest\n- Confirm release build APK does not have debuggable flag set",
+    "checklist": [
+      "Found android:debuggable=\"true\" in vulnerable manifest",
+      "Explained debugging attack surface (jdb, Frida, memory dump)",
+      "Demonstrated adb run-as or debug attach on vulnerable build",
+      "Removed android:debuggable from fixed manifest",
+      "Showed Gradle build types controlling debuggable flag",
+      "Set android:allowBackup=\"false\" in fixed manifest",
+      "Verified release build has debuggable=false"
+    ],
+    "qcm": [
+      {
+        "question": "What does android:debuggable=\"true\" enable on a non-rooted device?",
+        "choices": [
+          "A. Nothing — root is always required for debugging",
+          "B. adb attach, jdb breakpoints, memory inspection, and Frida injection",
+          "C. Only logcat output — no code execution",
+          "D. Only crash report generation"
+        ],
+        "correct": "B",
+        "explanation": "android:debuggable=\"true\" enables the JDWP debug interface. On a non-rooted device, adb can attach a Java debugger, set breakpoints, dump heap memory, and tools like Frida can inject without root."
+      },
+      {
+        "question": "What is the correct way to control the debuggable flag in Android?",
+        "choices": [
+          "A. Always set android:debuggable=\"true\" in the manifest",
+          "B. Remove android:debuggable from the manifest; let Gradle build types control it",
+          "C. Set android:debuggable=\"false\" in the manifest",
+          "D. Use ProGuard to strip the debuggable flag"
+        ],
+        "correct": "B",
+        "explanation": "Gradle automatically sets debuggable=true for debug builds and false for release builds. The manifest should not override this. Setting it to false in the manifest is also acceptable but redundant with proper Gradle config."
+      },
+      {
+        "question": "What is the risk of android:allowBackup=\"true\"?",
+        "choices": [
+          "A. The app cannot be restored after reinstall",
+          "B. App data can be extracted via adb backup without root",
+          "C. The APK is larger due to backup metadata",
+          "D. Only cloud backup is affected, not USB backup"
+        ],
+        "correct": "B",
+        "explanation": "With android:allowBackup=\"true\", adb backup extracts the app's private data directory without root on many devices. Setting it to false prevents this data exfiltration vector."
+      },
+      {
+        "question": "How can an attacker use Frida on a debuggable app without root?",
+        "choices": [
+          "A. Frida always requires root — no exception",
+          "B. Frida can inject into debuggable apps via the debug bridge without root",
+          "C. Frida only works on emulators",
+          "D. Frida requires the source code to work"
+        ],
+        "correct": "B",
+        "explanation": "Frida can attach to a debuggable process on a physical device without root using the JDWP (Java Debug Wire Protocol) bridge enabled by android:debuggable=\"true\"."
+      },
+      {
+        "question": "Which build type in Gradle should have debuggable=true?",
+        "choices": [
+          "A. release only",
+          "B. debug only",
+          "C. both debug and release",
+          "D. neither — it is set in the manifest"
+        ],
+        "correct": "B",
+        "explanation": "debuggable=true should only be set in the debug build type. The release build type must have debuggable=false (which is the Gradle default for release). Never ship a debuggable release build."
+      }
+    ],
+    "rubric": [
+      { "criterion": "Debuggable flag identification in manifest", "weight": "20%" },
+      { "criterion": "Debug attack surface explanation", "weight": "25%" },
+      { "criterion": "adb/jdb demonstration on vulnerable build", "weight": "20%" },
+      { "criterion": "Correct manifest and Gradle fix applied", "weight": "25%" },
+      { "criterion": "allowBackup fix included", "weight": "10%" }
+    ]
+  },
+  {
+    "id": "vulnerable-jni-native-check",
+    "name": "Vulnerable JNI Native Check",
+    "category": "native",
+    "difficulty": "advanced",
+    "description": "A toy Android app uses a JNI native C++ library to perform a license check against a hardcoded dummy token. The Java wrapper method is the Frida instrumentation point, and the native check is bypassable at runtime. This is a controlled educational example — not a real app.",
+    "risk": "Native code does NOT hide secrets. Hardcoded values in .so files are extractable with strings, objdump, or Ghidra. Java wrapper methods are easy Frida hooks. Client-side-only authorization can always be bypassed.",
+    "learningObjective": "Understand JNI security limitations, locate hardcoded values in native code, identify Java wrapper methods as Frida hook points, demonstrate runtime bypass on a toy app, and design a secure backend-verified alternative.",
+    "vulnerableExample": "=== native-lib.cpp (Vulnerable — toy example only) ===\n// WARNING: Educational toy. Do not use patterns from real apps.\n// This file is for the local training APK com.training.vulnapp only.\n#include <jni.h>\n#include <string.h>\n\n// VULNERABLE: Hardcoded dummy token in native code\n// Findable with: strings libtraining.so | grep TRAINING\n// Reversible with: objdump, Ghidra, radare2\nstatic const char* DUMMY_TOKEN = \"TRAINING-DUMMY-TOKEN-2024-FAKE\";\n\nextern \"C\" JNIEXPORT jboolean JNICALL\nJava_com_training_vulnapp_MainActivity_checkLicense(\n        JNIEnv* env,\n        jobject /* this */,\n        jstring input) {\n\n    const char* inputCStr = env->GetStringUTFChars(input, nullptr);\n    if (inputCStr == nullptr) return JNI_FALSE;\n\n    // VULNERABLE: Simple strcmp against hardcoded dummy value\n    // Runtime hook (Frida) can return JNI_TRUE without reaching this\n    int result = strcmp(inputCStr, DUMMY_TOKEN);\n\n    env->ReleaseStringUTFChars(input, inputCStr);\n    return (result == 0) ? JNI_TRUE : JNI_FALSE;\n}\n\n=== MainActivity.java (Vulnerable — toy example, Java only) ===\n// WARNING: Educational toy for com.training.vulnapp local lab.\npackage com.training.vulnapp;\n\nimport android.os.Bundle;\nimport android.view.View;\nimport android.widget.Button;\nimport android.widget.EditText;\nimport android.widget.TextView;\nimport androidx.appcompat.app.AppCompatActivity;\nimport android.util.Log;\n\npublic class MainActivity extends AppCompatActivity {\n\n    // Load the training native library\n    static {\n        System.loadLibrary(\"training\");\n    }\n\n    // Native method declaration — implemented in native-lib.cpp\n    public native boolean checkLicense(String input);\n\n    // Java wrapper method — this is the Frida instrumentation point\n    // Hooking this method bypasses the native check entirely\n    public boolean checkLicenseWrapper(String input) {\n        Log.d(\"LICENSE\", \"Checking: \" + input); // Also leaks input\n        return checkLicense(input);\n    }\n\n    private EditText inputField;\n    private TextView resultText;\n\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n\n        inputField  = (EditText) findViewById(R.id.inputField);\n        resultText  = (TextView) findViewById(R.id.resultText);\n        Button btn  = (Button)   findViewById(R.id.checkButton);\n\n        btn.setOnClickListener(new View.OnClickListener() {\n            @Override\n            public void onClick(View v) {\n                String input = inputField.getText().toString();\n                boolean granted = checkLicenseWrapper(input);\n                resultText.setText(granted ? \"Access granted\" : \"Access denied\");\n            }\n        });\n    }\n}\n\n=== AndroidManifest.xml ===\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    package=\"com.training.vulnapp\">\n    <application\n        android:debuggable=\"true\"\n        android:label=\"VulnTraining\"\n        android:theme=\"@style/AppTheme\">\n        <activity\n            android:name=\".MainActivity\"\n            android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n\n=== frida-hook-jni-demo.js (Local toy lab only) ===\n// SAFETY NOTICE: This script is ONLY for the generated local toy APK.\n// Package: com.training.vulnapp\n// Do NOT use against real applications, banking apps, or DRM systems.\n// Educational demonstration only — shows why Java wrappers are hook points.\n//\n// Run command (local lab only):\n// frida -U -f com.training.vulnapp -l frida-hook-jni-demo.js\n\nJava.perform(function() {\n    console.log(\"[*] Frida hook loaded — toy lab demo only\");\n    console.log(\"[*] Hooking: com.training.vulnapp.MainActivity.checkLicenseWrapper\");\n    console.log(\"[!] This ONLY works on the local training APK\");\n\n    var MainActivity = Java.use(\"com.training.vulnapp.MainActivity\");\n\n    // Hook the Java wrapper method\n    // This bypasses the native check without modifying native code\n    MainActivity.checkLicenseWrapper.implementation = function(input) {\n        console.log(\"[*] checkLicenseWrapper called with: \" + input);\n        console.log(\"[*] Forcing return to: true (bypass demo)\");\n        // The native checkLicense is never called — wrapper is overridden\n        return true;\n    };\n\n    console.log(\"[*] Hook installed. Enter any value in the app.\");\n    console.log(\"[*] The local check will be bypassed.\");\n    console.log(\"[!] A real backend check cannot be bypassed this way.\");\n    console.log(\"[!] This demo teaches why client-only checks are insufficient.\");\n});",
+    "fixedExample": "=== native-lib.cpp (Fixed — format validation only) ===\n// FIXED: Native code only validates input format.\n// Real authorization decision happens on the backend.\n// No hardcoded secret in native code.\n#include <jni.h>\n#include <string>\n\nextern \"C\" JNIEXPORT jboolean JNICALL\nJava_com_training_vulnapp_MainActivity_checkLicenseFormat(\n        JNIEnv* env,\n        jobject /* this */,\n        jstring input) {\n\n    const char* inputCStr = env->GetStringUTFChars(input, nullptr);\n    if (inputCStr == nullptr) return JNI_FALSE;\n\n    std::string s(inputCStr);\n    env->ReleaseStringUTFChars(input, inputCStr);\n\n    // Only validate format: 10-50 chars, alphanumeric + dash\n    // Does NOT check if token is actually valid — backend does that\n    if (s.length() < 10 || s.length() > 50) return JNI_FALSE;\n    for (char c : s) {\n        if (!isalnum((unsigned char)c) && c != '-') return JNI_FALSE;\n    }\n    return JNI_TRUE; // Format OK — still needs backend verification\n}\n\n=== MainActivity.java (Fixed — Java only) ===\n// FIXED: Format check locally, real auth via backend.\n// Android side is Java only — no Kotlin.\npackage com.training.vulnapp;\n\nimport android.os.Bundle;\nimport android.view.View;\nimport android.widget.Button;\nimport android.widget.EditText;\nimport android.widget.TextView;\nimport androidx.appcompat.app.AppCompatActivity;\nimport android.util.Log;\n\npublic class MainActivity extends AppCompatActivity {\n\n    static {\n        System.loadLibrary(\"training\");\n    }\n\n    // Fixed: only validates format, not secret value\n    public native boolean checkLicenseFormat(String input);\n\n    // Fixed wrapper: format check + async backend verification\n    public void checkLicenseWrapper(final String input, final LicenseCallback cb) {\n        // Step 1: local format check (fast, offline)\n        if (!checkLicenseFormat(input)) {\n            cb.onResult(false, \"Invalid license format\");\n            return;\n        }\n        // Step 2: backend decides — client never makes final trust decision\n        // In production: HTTPS POST with signed server response\n        // For this toy lab: stub that always requires backend\n        verifyWithBackend(input, cb);\n    }\n\n    private void verifyWithBackend(String input, LicenseCallback cb) {\n        // MOCK stub for training lab\n        // Real production: async HTTPS call, verify signed JWT response\n        Log.d(\"LICENSE\", \"Backend verification required\");\n        cb.onResult(false, \"Backend check not implemented in toy lab\");\n    }\n\n    public interface LicenseCallback {\n        void onResult(boolean granted, String message);\n    }\n\n    private EditText inputField;\n    private TextView resultText;\n\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n\n        inputField = (EditText) findViewById(R.id.inputField);\n        resultText = (TextView) findViewById(R.id.resultText);\n        Button btn = (Button) findViewById(R.id.checkButton);\n\n        btn.setOnClickListener(new View.OnClickListener() {\n            @Override\n            public void onClick(View v) {\n                String input = inputField.getText().toString();\n                checkLicenseWrapper(input, new LicenseCallback() {\n                    @Override\n                    public void onResult(boolean granted, String msg) {\n                        resultText.setText(granted ? \"Access granted\" : \"Access denied: \" + msg);\n                    }\n                });\n            }\n        });\n    }\n}\n\n// Secure design principles for JNI authorization:\n// 1. Native code validates format only — never the secret\n// 2. Backend returns a signed response (JWT/HMAC) the client verifies\n// 3. Client treats itself as untrusted — final decision always server-side\n// 4. Rotate tokens server-side; client cannot override expiry\n// 5. Monitor for anomalous backend call patterns (replay detection)",
+    "studentTask": "1. Open MainActivity.java (vulnerable) and identify:\n   a. System.loadLibrary call\n   b. public native boolean checkLicense(String input) declaration\n   c. public boolean checkLicenseWrapper(String input) wrapper method\n2. Open native-lib.cpp and identify:\n   a. The DUMMY_TOKEN hardcoded string\n   b. The JNI function name and signature\n   c. The strcmp weak comparison\n3. Explain in writing why the hardcoded native check is weak:\n   - What tool finds DUMMY_TOKEN in the .so file?\n   - Why is the Java wrapper a Frida hook point?\n4. Run the toy app locally on an emulator or device.\n5. Run the provided Frida script against the toy app:\n   frida -U -f com.training.vulnapp -l frida-hook-jni-demo.js\n6. Enter any value and observe 'Access granted' — demonstrating bypass.\n7. Write a secure design proposal:\n   - What should the native code do instead?\n   - Where should authorization decisions be made?\n   - What should the backend return and how should the client verify it?",
+    "teacherCorrection": "Key teaching points:\n\n1. JNI does not protect secrets. The DUMMY_TOKEN string in native-lib.cpp is visible with: strings libtraining.so | grep TRAINING. Ghidra, radare2, and IDA can reverse the full native function.\n\n2. The Java wrapper method checkLicenseWrapper is the easiest hook point. Frida's Java.use() hooks Java methods at the ART runtime level. Hooking the wrapper bypasses the native call entirely — the C++ strcmp is never reached.\n\n3. Runtime instrumentation (Frida, Xposed) can modify return values, print arguments, and replace implementations at runtime. Client-side-only authorization is always bypassable.\n\n4. The correct fix: native code validates input format only (length, charset). Real authorization happens server-side. The server returns a cryptographically signed response. The client verifies the signature but never makes the final trust decision.\n\n5. Android source must be Java only (no Kotlin) as per lab requirements. The fixed MainActivity.java uses Java anonymous class for callback, not a lambda or Kotlin coroutine.",
+    "testCheck": "- Confirm DUMMY_TOKEN hardcoded string in vulnerable native-lib.cpp\n- Confirm vulnerable version returns true for TRAINING-DUMMY-TOKEN-2024-FAKE\n- Confirm checkLicenseWrapper Java method exists in vulnerable MainActivity.java\n- Confirm Frida hook forces true return in toy lab with frida-hook-jni-demo.js\n- Confirm fixed native-lib.cpp has no hardcoded secret\n- Confirm fixed native function is checkLicenseFormat (format only)\n- Confirm fixed MainActivity.java calls backend stub (verifyWithBackend)\n- Confirm fixed version does NOT make final trust decision client-side\n- Confirm all Android source files are Java, not Kotlin\n- Confirm Markdown export includes safety warning about Frida script scope",
+    "checklist": [
+      "Found native method declaration in vulnerable MainActivity.java",
+      "Found Java wrapper method checkLicenseWrapper in MainActivity.java",
+      "Found C++ JNI function in native-lib.cpp",
+      "Found DUMMY_TOKEN hardcoded value in native-lib.cpp",
+      "Explained why native code is reversible (strings/Ghidra)",
+      "Explained why Java wrapper is a Frida hook point",
+      "Ran toy app locally on emulator or device",
+      "Ran Frida script against toy app and observed bypass",
+      "Wrote secure design proposal with backend verification",
+      "Verified fixed version removes hardcoded secret",
+      "Verified Android source is Java, not Kotlin"
+    ],
+    "qcm": [
+      {
+        "question": "Which command finds the hardcoded DUMMY_TOKEN string in a compiled .so file?",
+        "choices": [
+          "A. adb shell cat libtraining.so",
+          "B. strings libtraining.so | grep DUMMY",
+          "C. javap -c libtraining.so",
+          "D. apktool d app.apk"
+        ],
+        "correct": "B",
+        "explanation": "The strings command extracts all printable character sequences from binary files. grep filters for the target value. This works on any .so without decompilation."
+      },
+      {
+        "question": "Why is the Java wrapper method checkLicenseWrapper an easier Frida hook than the native checkLicense?",
+        "choices": [
+          "A. Java methods run faster than native methods",
+          "B. Frida's Java.use() hooks Java methods in the ART runtime without needing native instrumentation",
+          "C. The wrapper method is always exported in the manifest",
+          "D. Kotlin wrappers are hookable but Java ones are not"
+        ],
+        "correct": "B",
+        "explanation": "Frida's Java.use() API hooks methods at the ART (Android Runtime) level. Java methods are easier targets because Frida has full visibility into the Java method table. Hooking the wrapper bypasses the native call entirely."
+      },
+      {
+        "question": "What does the Frida hook in frida-hook-jni-demo.js actually do?",
+        "choices": [
+          "A. It modifies the native .so file on disk",
+          "B. It replaces checkLicenseWrapper at runtime, returning true without calling native code",
+          "C. It decompiles the APK and patches the smali bytecode",
+          "D. It intercepts network calls to the license server"
+        ],
+        "correct": "B",
+        "explanation": "The hook replaces the implementation of checkLicenseWrapper at runtime. The native checkLicense function is never called. The return value is forced to true regardless of input."
+      },
+      {
+        "question": "What should a native JNI function do in a secure design?",
+        "choices": [
+          "A. Store the secret more deeply in the binary to make it harder to find",
+          "B. Validate input format only — final authorization must happen server-side",
+          "C. Encrypt the secret with AES in the native code",
+          "D. Compare input against multiple hardcoded values for redundancy"
+        ],
+        "correct": "B",
+        "explanation": "Native code should only perform format validation (length, character set). It should never make a final trust decision. The server must validate the actual token and return a signed response."
+      },
+      {
+        "question": "Why does moving the authorization check to the backend make it harder to bypass?",
+        "choices": [
+          "A. Backend code is compiled differently than Android code",
+          "B. The attacker cannot instrument the server-side code they do not control",
+          "C. Backend always uses Kotlin which is harder to decompile",
+          "D. Android cannot communicate with a backend server"
+        ],
+        "correct": "B",
+        "explanation": "An attacker can instrument any code running on their device (Frida, Xposed, patching). They cannot instrument server-side code. A signed server response that the client cryptographically verifies prevents client-side bypass."
+      },
+      {
+        "question": "Which tool can fully reverse engineer the logic of a native .so JNI function?",
+        "choices": [
+          "A. jadx (Java decompiler only)",
+          "B. Ghidra or IDA Pro (binary disassembler/decompiler for native code)",
+          "C. adb logcat",
+          "D. apktool (smali only)"
+        ],
+        "correct": "B",
+        "explanation": "Ghidra (NSA, free) and IDA Pro (commercial) disassemble and decompile native ARM/x86 .so files. They can reconstruct the C/C++ logic including JNI functions, showing hardcoded strings and comparison logic."
+      }
+    ],
+    "rubric": [
+      { "criterion": "Java Android code analysis (MainActivity.java)", "weight": "15%" },
+      { "criterion": "Static native analysis (native-lib.cpp, strings command)", "weight": "20%" },
+      { "criterion": "Native code and JNI understanding", "weight": "20%" },
+      { "criterion": "Frida demo understanding and execution", "weight": "20%" },
+      { "criterion": "Secure fix proposal with backend verification design", "weight": "15%" },
+      { "criterion": "Report clarity and technical accuracy", "weight": "10%" }
+    ]
+  }
+]
