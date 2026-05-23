@@ -263,6 +263,21 @@ http://localhost:3000
 | Vulnerable JNI Native Check | Advanced | Native Android | Study why local client-side native checks are not sufficient as a security boundary |
 
 ---
+## Positioning against related projects
+
+VulnLab belongs to the same educational ecosystem as vulnerable Android applications and CTF-style training platforms, but its objective is different. Existing applications such as DIVA, InsecureBankv2, and AndroGoat provide valuable vulnerable targets for learning Android security. VulnLab adds a generation and evaluation layer around that type of learning activity.
+
+| Project | Main focus | Strengths | Difference with VulnLab |
+|---|---|---|---|
+| DIVA Android | Intentionally insecure Android app for pentesting and secure coding practice | Simple exercises, source code, classic Android vulnerability categories, native-code examples | Fixed target application; no challenge generation, student submissions, instructor dashboard, or Markdown/JSON lab export |
+| InsecureBankv2 | Vulnerable banking-style Android application with backend server | Realistic client-server scenario, many Android insecurity examples, walkthrough material | Fixed scenario; more focused on testing a prepared application than generating classroom labs |
+| AndroGoat | Kotlin-based vulnerable Android application for modern Android security testing | Wide vulnerability coverage, modern Android stack, useful reference target for learners | Prebuilt exercise app; no integrated lab generator, quiz workflow, APK generation pipeline, or instructor review workflow |
+| Generic CTF platforms | Challenge hosting, flags, scores, competitions | Strong scoring and competition flow | Usually not specialized in Android APK generation or in producing vulnerable/fixed artifacts with teaching material |
+| VulnLab | Reproducible generation of Android labs with instructor and student workflows | Scenario generation, APK build, fixed version, quiz, hints, write-up, exports, dashboard, Docker deployment | Prototype stage; persistence, authentication, and automatic variation still need to be strengthened |
+
+The main contribution of VulnLab is the combination of vulnerable Android artifacts with a complete pedagogical workflow: generation, distribution, guided analysis, submission, evaluation, and export.
+
+---
 
 ## Instructor workflow
 
