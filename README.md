@@ -55,18 +55,6 @@ A demonstration video can be linked directly from this section and stored in the
 
 - YouTube demonstration: [VulnLab demonstration video](https://youtu.be/fKVrczlnqhc)
 
-Suggested demonstration sequence:
-
-1. Start the platform with Docker Compose.
-2. Open the web interface at `http://localhost:3000`.
-3. Create a challenge from the administrator dashboard.
-4. Select a vulnerability module and configure the quiz size.
-5. Generate the challenge and copy the student link.
-6. Open the student challenge page.
-7. Download the vulnerable APK or review the generated learning material.
-8. Answer the quiz, submit the flag, and write the technical explanation.
-9. Return to the administrator dashboard and review the submission.
-10. Export the generated material in Markdown or JSON.
 
 ---
 
